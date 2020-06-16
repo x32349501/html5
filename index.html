@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>表盘</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body { padding: 0; margin: 0; width: 100%; height: 100%; user-select: none;
+            background-color: #1f253d;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.125) 1px, transparent 2px), linear-gradient(90deg, rgba(0, 0, 0, 0.125) 1px, transparent 2px), linear-gradient(rgba(0, 0, 0, .125) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, .125) 1px, transparent 1px);
+            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+            background-position: -2px -2px, -2px -2px, -1px -1px, -1px -1px;
+        }
+        canvas { transform: rotateX(10deg); }
+        .box { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; perspective: 600px }
+    </style>
+</head>
+<body>
+<div class="box">
+    <canvas width="600" height="600"></canvas>
+</div>
+<script>
+	const hourSystem = 12.0
+    const twoPI = 2.0 * Math.PI;
+    const halfPI = Math.PI / 2.0;
+    const hourSegments = twoPI / hourSystem;
+    const minuteSegments = twoPI / 60.0;
+    const secondSegments = twoPI / 60.0;
+
+    function resizeCanvas() {
+        const clientWidth = document.documentElement.clientWidth;
+        const clientHeight = document.documentElement.clientHeight;
+        const minSize = Math.min(clientWidth, clientHeight);
+        const canvasElement = document.getElementsByTagName("canvas")[0];
+        canvasElement.width = minSize * 0.7;
+        canvasElement.height = minSize * 0.7;
+    }
+
+    function drawArc(ctx, cx, cy, rescale, color, radius, size, delta) {
+        const scaledRadius = radius * rescale;
+        const arcEnds = (size - 1.0) / 2.0 * rescale;
+
+        ctx.save();
+
+        ctx.globalAlpha = 0.2;
+        ctx.lineWidth = size * rescale;
+
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, scaledRadius, 0.0, 2.0 * Math.PI);
+        ctx.stroke();
+
+        ctx.globalAlpha = 1.0;
+        ctx.lineWidth = size * rescale * 0.99;
+        ctx.strokeStyle = color;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, scaledRadius, -halfPI, delta - halfPI);
+        ctx.stroke();
+
+        ctx.lineWidth = 1.0;
+        ctx.fillStyle = color;
+
+        ctx.beginPath();
+        ctx.arc(cx - scaledRadius * Math.cos(halfPI),
+                cy - scaledRadius * Math.sin(halfPI), arcEnds, 0.0, 2.0 * Math.PI);
+        ctx.fill();
+
+        ctx.shadowColor = "black";
+        ctx.shadowOffsetX = 2.0 * Math.cos(delta);
+        ctx.shadowOffsetY = 2.0 * Math.sin(delta);
+
+        ctx.beginPath();
+        ctx.arc(cx + scaledRadius * Math.cos(delta - halfPI),
+                cy + scaledRadius * Math.sin(delta - halfPI), arcEnds, 0.0, 2.0 * Math.PI);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    window.addEventListener("resize", function() {
+        resizeCanvas();
+    });
+
+    window.addEventListener('DOMContentLoaded', function() {
+        const canvasElement = document.getElementsByTagName("canvas")[0];
+        const context = canvasElement.getContext("2d");
+
+        function render() {
+            const now = new Date();
+            const seconds = now.getSeconds() + now.getMilliseconds() / 1000.0;
+            const minutes = now.getMinutes() + seconds / 60.0;
+            const hours = (now.getHours() % hourSystem) + minutes / 60.0;
+
+            const width = canvasElement.width;
+            const height = canvasElement.height;
+            const cx = width / 2.0;
+            const cy = height / 2.0;
+            const rescale = Math.min(width, height) / 600.0;
+
+            context.clearRect(0, 0, width, height);
+
+            drawArc(context, cx, cy, rescale, "#88ff00", 148.0, 50.0, hourSegments * hours);
+            drawArc(context, cx, cy, rescale, "#00ffff", 199.0, 50.0, minuteSegments * minutes);
+            drawArc(context, cx, cy, rescale, "#8888ff", 250.0, 50.0, secondSegments * seconds);
+
+            window.requestAnimationFrame(render);
+        }
+
+        resizeCanvas();
+        window.requestAnimationFrame(render);
+    });
+</script>
+</body>
+</html>
